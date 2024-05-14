@@ -3,14 +3,14 @@ export default [
     id: '1',
     name: 'Vadim Savin',
     image:
-      'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/avatars/vadim1.JPG',
+      'https://i.ibb.co/6t06LzK/mockup1-Campusmatch.jpg',
     bio: 'I will be the semicolons to your code',
   },
   {
     id: '2',
     name: 'Elon Musk',
     image:
-      'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/avatars/elon.png',
+      'https://i.ibb.co/s5VL47g/mockup2-CM.jpg',
     bio: 'A dude with a rocket is looking for a gal with fuel',
   },
   {

@@ -51,7 +51,7 @@ const nextCardStyle = useAnimatedStyle(() => {
       translateX.value = withSpring(hiddenTranslateX);
     } else {
       translateX.value = withSpring(-hiddenTranslateX);
-      runOnJS(setCurrentIndex)(currentIndex.value + 1);
+      
     }
   });
 
