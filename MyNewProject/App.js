@@ -1,69 +1,75 @@
-import { useSharedValue, withSpring } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { useEffect } from 'react';
+import React, { useState } from 'react';
+import { View, StyleSheet, Dimensions } from 'react-native';
+import Card from './src/assets/components/tinderCard';
+import users from './TinderAssets/assets/data/users';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 
-const App = () =>{
-  const hiddenTranslateX = 500; // Adjust based on your hidden position
-  const currentIndex = useSharedValue(0);
+const App = () => {
+  const [currentIndex, setCurrentIndex] = useState(0);
   const translateX = useSharedValue(0);
-  const setNextIndex = (index) => {
-    // Your logic to set the next index
-  };
-  const setCurrentIndex = (index) => {
-    currentIndex.value = index;
-  };
+
+  const frontCardStyle = useAnimatedStyle(() => {
+    const rotation = `${translateX.value / 10}deg`; // Card rotation based on swipe
+    return {
+      transform: [
+        { translateX: translateX.value },
+        { rotate: rotation }
+      ],
+    };
+  });
+
+  const backCardStyle = useAnimatedStyle(() => {
+    // Scale the next card based on the front card's movement
+    let normalizedTranslateX = Math.min(Math.abs(translateX.value) / Dimensions.get('window').width, 1);
+    let scale = 0.8 + 0.2 * normalizedTranslateX; // Start at 80% scale and grow to 100%
+    return {
+      transform: [{ scale }]
+    };
+  });
 
   const gesture = Gesture.Pan()
     .onUpdate((event) => {
       translateX.value = event.translationX;
     })
     .onEnd((event) => {
-      if (Math.abs(event.velocityX) < 800 && Math.abs(event.translationX) < 145) {
+      if (Math.abs(event.translationX) < 100) { // Threshold to snap back
         translateX.value = withSpring(0);
-        return;
-      }
-      // Make card dissolve
-      if (translateX.value > 0) {
-        translateX.value = withSpring(hiddenTranslateX);
       } else {
-        translateX.value = withSpring(-hiddenTranslateX);
-        runOnJS(setCurrentIndex)(currentIndex.value + 1);
+        // Add logic to handle card removal or transition
+        translateX.value = withSpring(Dimensions.get('window').width * Math.sign(event.translationX));
       }
     });
 
-  useEffect(() => {
-    console.log('currentIndex changed:', currentIndex.value);
-    translateX.value = 0;
-    setNextIndex(currentIndex.value + 1);
-  }, [currentIndex.value]);
-
   return (
-    <GestureDetector gesture={gesture}>
-      <Animated.View style={[{ transform: [{ translateX: translateX.value }] }]}>
-        {/* Your card content */}
+    <GestureHandlerRootView style={styles.pageContainer}>
+      <Animated.View style={[styles.cardContainer, backCardStyle]}>
+        <Card user={users[(currentIndex + 1) % users.length]} /> {/* Cycle through users for the back card */}
       </Animated.View>
-    </GestureDetector>
+      <GestureDetector gesture={gesture}>
+        <Animated.View style={[styles.cardContainer, frontCardStyle]}>
+          <Card user={users[currentIndex]} /> {/* Display the front card */}
+        </Animated.View>
+      </GestureDetector>
+    </GestureHandlerRootView>
   );
 };
-  const styles = StyleSheet.create({
-    pageContainer: {
-      justifyContent: 'center',
-      alignItems : 'center',
-      flex: 1},
-    animatedCard: {
-      width: '100%',
-      flex:1,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    nextCardContainer: {
-      ...StyleSheet.absoluteFillObject,
-      justifyContent: 'center',
-      alignItems: 'center',
-    
-    
-    }
-  });
 
+const styles = StyleSheet.create({
+  pageContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0', // Light grey background
+  },
+  cardContainer: {
+    width: '95%',
+    height: '70%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute', // Overlay cards
+  }
+});
 
-  export default App;
+export default App;
+
