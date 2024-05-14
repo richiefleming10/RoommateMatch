@@ -1,57 +1,73 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
-import Card from './src/assets/components/tinderCard';
-import users from './TinderAssets/assets/data/users';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import { View, StyleSheet, Dimensions, useWindowDimensions } from 'react-native';
+import Card from './src/assets/components';
+import users from './src/assets/data/users';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 
 const App = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const translateX = useSharedValue(0);
+  const [nextIndex, setNextIndex] = useState(currentIndex + 1);
 
-  const frontCardStyle = useAnimatedStyle(() => {
-    const rotation = `${translateX.value / 10}deg`; // Card rotation based on swipe
-    return {
-      transform: [
-        { translateX: translateX.value },
-        { rotate: rotation }
-      ],
-    };
-  });
 
-  const backCardStyle = useAnimatedStyle(() => {
-    // Scale the next card based on the front card's movement
-    let normalizedTranslateX = Math.min(Math.abs(translateX.value) / Dimensions.get('window').width, 1);
-    let scale = 0.8 + 0.2 * normalizedTranslateX; // Start at 80% scale and grow to 100%
-    return {
-      transform: [{ scale }]
-    };
-  });
+  const currentProfile = users[currentIndex];
+  const nextProfile = users[currentIndex + 1]
+
+ 
+const {width: screenWidth} = useWindowDimensions();
+const hiddenTranslateX = 2 * screenWidth
+
+
+const cardStyle = useAnimatedStyle(() => {
+  const rotation = `${translateX.value / 10}deg`;
+  return {
+    transform: [
+      { translateX: translateX.value },
+      { rotate: rotation }, // -60deg 0deg 60deg
+    ],
+  };
+});
+
+const nextCardStyle = useAnimatedStyle(() => {
+  let normalizedTranslateX = Math.min(Math.abs(translateX.value) / 300, 1);
+  let cardScale = 0.8 + 0.2 * normalizedTranslateX;
+  return {
+    transform: [{ scale: cardScale }],
+  };
+});
 
   const gesture = Gesture.Pan()
-    .onUpdate((event) => {
-      translateX.value = event.translationX;
-    })
-    .onEnd((event) => {
-      if (Math.abs(event.translationX) < 100) { // Threshold to snap back
-        translateX.value = withSpring(0);
-      } else {
-        // Add logic to handle card removal or transition
-        translateX.value = withSpring(Dimensions.get('window').width * Math.sign(event.translationX));
-      }
-    });
+  .onUpdate((event) => {
+    translateX.value = event.translationX;
+  })
+  .onEnd((event) => {
+    if (Math.abs(event.velocityX) < 800 && Math.abs(event.translationX) < 145) {
+      translateX.value = withSpring(0);
+      return;
+    }
+    // Make card dissolve
+    if (translateX.value > 0) {
+      translateX.value = withSpring(hiddenTranslateX);
+    } else {
+      translateX.value = withSpring(-hiddenTranslateX);
+      runOnJS(setCurrentIndex)(currentIndex.value + 1);
+    }
+  });
 
   return (
     <GestureHandlerRootView style={styles.pageContainer}>
-      <Animated.View style={[styles.cardContainer, backCardStyle]}>
-        <Card user={users[(currentIndex + 1) % users.length]} /> {/* Cycle through users for the back card */}
+    <View style={styles.nextCardContainer}>
+      <Animated.View style={[styles.animatedCard, nextCardStyle]}>
+        <Card user={nextProfile} />
       </Animated.View>
-      <GestureDetector gesture={gesture}>
-        <Animated.View style={[styles.cardContainer, frontCardStyle]}>
-          <Card user={users[currentIndex]} /> {/* Display the front card */}
-        </Animated.View>
-      </GestureDetector>
-    </GestureHandlerRootView>
+    </View>
+    <GestureDetector gesture={gesture}>
+      <Animated.View style={[styles.animatedCard, cardStyle]}>
+        <Card user={currentProfile} />
+      </Animated.View>
+    </GestureDetector>
+  </GestureHandlerRootView>
   );
 };
 
@@ -62,12 +78,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f0f0f0', // Light grey background
   },
-  cardContainer: {
-    width: '95%',
-    height: '70%',
+  animatedCard: {
+    width: '100%',
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center', // Overlay cards
+  },
+  nextCardContainer:{
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'absolute', // Overlay cards
+
   }
 });
 
