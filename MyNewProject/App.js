@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, Dimensions, useWindowDimensions } from 'react-native';
 import Card from './src/assets/components';
 import users from './src/assets/data/users';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, runOnJS, interpolate, useDerivedValue } from 'react-native-reanimated';
-import { Gesture, GestureDetector, GestureHandlerRootView, } from 'react-native-gesture-handler';
-
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-native-reanimated';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 
 const App = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const translateX = useSharedValue(0);
   const [nextIndex, setNextIndex] = useState(currentIndex + 1);
+
 
   const currentProfile = users[currentIndex];
   const nextProfile = users[currentIndex + 1]
@@ -49,19 +49,11 @@ const nextCardStyle = useAnimatedStyle(() => {
     // Make card dissolve
     if (translateX.value > 0) {
       translateX.value = withSpring(hiddenTranslateX);
-      runOnJS(setCurrentIndex)(currentIndex+ 1)
     } else {
       translateX.value = withSpring(-hiddenTranslateX);
-      runOnJS(setCurrentIndex)(currentIndex+ 1)
       
     }
-    
   });
-
-   useEffect(() => {
-    translateX.value = 0;
-  }, [translateX.value,]);
-  
 
   return (
     <GestureHandlerRootView style={styles.pageContainer}>
